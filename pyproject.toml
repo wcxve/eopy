@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "eopy"
 dynamic = ["version"]
-description = ''
+description = 'Package for Earth occultation data analysis.'
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -18,7 +18,13 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
 ]
-dependencies = []
+dependencies = [
+  "astropy",
+  "numpy",
+  "pymsis",
+  "scipy",
+  "tables"
+]
 
 [project.urls]
 Documentation = "https://github.com/wcxve/eopy#readme"
