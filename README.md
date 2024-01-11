@@ -1,8 +1,5 @@
 # eopy
 
-[![PyPI - Version](https://img.shields.io/pypi/v/eopy.svg)](https://pypi.org/project/eopy)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/eopy.svg)](https://pypi.org/project/eopy)
-
 -----
 
 **Table of Contents**
@@ -13,7 +10,7 @@
 ## Installation
 
 ```console
-pip install eopy
+pip install git+https://github.com/wcxve/eopy
 ```
 
 ## License
