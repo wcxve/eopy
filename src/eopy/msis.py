@@ -18,7 +18,7 @@ from pymsis.utils import get_f107_ap
 from tqdm import tqdm
 
 
-def element_density(
+def calc_element_density(
     date: str,
     lons: ArrayLike,
     lats: ArrayLike,
@@ -165,7 +165,7 @@ def element_density(
     return density
 
 
-def column_density(
+def calc_column_density(
     src_radec: ArrayLike,
     loc_j2000: ArrayLike,
     utc: ArrayLike,
@@ -367,7 +367,7 @@ def column_density(
         with mp.Pool(cores) as pool:
             results = [
                 pool.apply_async(
-                    func=element_density,
+                    func=calc_element_density,
                     args=(
                         utc_masked[i].value,
                         path[i].lon.value,
@@ -393,15 +393,10 @@ def column_density(
 
     else:
         results = [
-            element_density(
-                utc_masked[i].value,
-                path[i].lon.value,
-                path[i].lat.value,
-                path[i].height.to(u.km).value,
-                f107_masked[i],
-                f107a_masked[i],
-                ap_masked[i],
-                **kwargs
+            calc_element_density(
+                utc_masked[i].value, path[i].lon.value, path[i].lat.value,
+                path[i].height.to(u.km).value, f107_masked[i], f107a_masked[i],
+                ap_masked[i], **kwargs
             )
             for i in tqdm(
                 range(np.sum(mask)),
