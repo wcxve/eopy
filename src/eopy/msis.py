@@ -182,6 +182,7 @@ def calc_column_density(
     ap: Optional[ArrayLike] = None,
     options: Optional[List[float]] = None,
     version: Union[float, str] = 2.1,
+    progress: bool = True,
     **kwargs: dict
 ) -> NDArray:
     """Compute atmospheric column density between `src_radec` and `loc_j2000`.
@@ -234,6 +235,8 @@ def calc_column_density(
         Number of CPU to use. The default is ``max(1, mp.cpu_count()-1)``.
     name : str, optional
         This must be given as ``name=__name__`` when in Windows platform.
+    progress : bool, optional
+        Whether to show progress bar of calculation. The default is True.
     **kwargs : dict, optional
         Other parameters forwarded to :func:`element_density`.
 
@@ -401,7 +404,8 @@ def calc_column_density(
                 for r in tqdm(
                     results,
                     desc=f'Running on {cores} CPUs',
-                    file=sys.stdout
+                    file=sys.stdout,
+                    disable=not progress,
                 )
             ]
 
@@ -415,7 +419,8 @@ def calc_column_density(
             for i in tqdm(
                 range(np.sum(mask)),
                 desc=f'Running on 1 CPU',
-                file=sys.stdout
+                file=sys.stdout,
+                disable=not progress,
             )
         ]
 
