@@ -19,11 +19,19 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
+  "arviz",
   "astropy",
+#  "corner>=2.2.2",
+#  "jax",
+#  "jaxopt",
+  "matplotlib",
+#  "iminuit",
   "numpy",
+#  "numpyro",
   "pymsis",
   "scipy",
-  "tables"
+  "tables",
+  "tqdm"
 ]
 
 [project.urls]
