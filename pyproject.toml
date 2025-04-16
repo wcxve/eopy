@@ -19,7 +19,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
-  "arviz",
+#  "arviz",
   "astropy",
 #  "corner>=2.2.2",
 #  "jax",
