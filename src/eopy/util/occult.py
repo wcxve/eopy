@@ -78,11 +78,11 @@ def calc_tangent_height(
     a = src_x*src_x + src_y*src_y + z_factor * src_z*src_z
     b = 2*(loc_x*src_x + loc_y*src_y + z_factor*loc_z*src_z)
     c = loc_x*loc_x + loc_y*loc_y + z_factor*loc_z*loc_z - r2
-    hmin = np.sqrt(c + r2 - b*b/4.0/a) - r2
+    hmin = np.sqrt(c + r2 - b*b/4.0/a) - r
     mask = (a*b > 0.0)
     hmin[mask] = np.linalg.norm(
         [loc_x[mask], loc_y[mask], loc_z[mask]/(1 - f)], axis=0
-    ) - r2
+    ) - r
 
     return hmin / 1000.0
 
@@ -108,7 +108,7 @@ def calc_transmis_coeff(
     # shape = (e, 5)
     cs = np.column_stack(
         [
-            calculate_cross_section(z, energy)['total'] * 1e-24
+            calculate_cross_section(z, energy)['total'] * 1e-24  # barn to cm2
             for z in (1, 2, 7, 8, 18)  # H, He, N, O, Ar
         ]
     )
