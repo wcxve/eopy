@@ -1,14 +1,13 @@
 """Get atmosphere density from pymsis."""
+
 from __future__ import annotations
 
 import multiprocessing as mp
 import platform
 import sys
-from typing import List, Optional, Union
 
 import astropy.units as u
 import numpy as np
-
 from astropy import coordinates as coords
 from astropy.constants.iau2015 import R_earth
 from astropy.time import Time
@@ -27,8 +26,8 @@ def calc_element_density(
     f107a: float,
     ap: ArrayLike,
     *,
-    options: Optional[List[float]] = None,
-    version: Union[float, str] = 2.1,
+    options: list[float] | None = None,
+    version: float | str = 2.1,
     **kwargs: dict,
 ) -> NDArray:
     """Get MSIS profile along given locations.
@@ -142,25 +141,30 @@ def calc_element_density(
         aps=aps,
         options=options,
         version=version,
-        **kwargs
+        **kwargs,
     )
 
     # NOTE: nan usually occurs at low altitude for low density components,
     #  we set these nans to zeros.
     density[np.isnan(density)] = 0.0
 
-    density = np.column_stack((
-        # H
-        density[:, 5],
-        # He
-        density[:, 4],
-        # N2, N, and N in NO for MSIS 2.1
-        density[:, 1] * 2.0 + density[:, 7] + density[:, 9],
-        # O2, O, Anomalous O, and O in NO for MSIS 2.1
-        density[:, 2] * 2.0 + density[:, 3] + density[:, 8] + density[:, 9],
-        # Ar
-        density[:, 6]
-    ))
+    density = np.column_stack(
+        (
+            # H
+            density[:, 5],
+            # He
+            density[:, 4],
+            # N2, N, and N in NO for MSIS 2.1
+            density[:, 1] * 2.0 + density[:, 7] + density[:, 9],
+            # O2, O, Anomalous O, and O in NO for MSIS 2.1
+            density[:, 2] * 2.0
+            + density[:, 3]
+            + density[:, 8]
+            + density[:, 9],
+            # Ar
+            density[:, 6],
+        )
+    )
 
     return density
 
@@ -172,18 +176,18 @@ def calc_column_density(
     step_size: float = 0.5,
     lower_alt: float = 5.0,
     upper_alt: float = 550.0,
-    f: float = 1/298.257,
+    f: float = 1 / 298.257,
     mass: bool = False,
     profile: bool = False,
-    cores: Optional[int] = None,
-    name: Optional[str] = None,
-    f107: Optional[ArrayLike] = None,
-    f107a: Optional[ArrayLike] = None,
-    ap: Optional[ArrayLike] = None,
-    options: Optional[List[float]] = None,
-    version: Union[float, str] = 2.1,
+    cores: int | None = None,
+    name: str | None = None,
+    f107: ArrayLike | None = None,
+    f107a: ArrayLike | None = None,
+    ap: ArrayLike | None = None,
+    options: list[float] | None = None,
+    version: float | str = 2.1,
     progress: bool = True,
-    **kwargs: dict
+    **kwargs: dict,
 ) -> NDArray:
     """Compute atmospheric column density between `src_radec` and `loc_j2000`.
 
@@ -257,7 +261,7 @@ def calc_column_density(
         if platform.system() == 'Windows' and name != '__main__':
             raise RuntimeError(
                 "call the function under ``if __name__ == '__main__':`` "
-                "and set ``name=__name__`` when multiprocessing"
+                'and set ``name=__name__`` when multiprocessing'
             )
         parallel = True
     else:
@@ -295,11 +299,10 @@ def calc_column_density(
     src = coords.GCRS(
         ra=src_radec[0].repeat(utc.size) * u.deg,
         dec=src_radec[1].repeat(utc.size) * u.deg,
-        obstime=utc
+        obstime=utc,
     ).transform_to(
         coords.ITRS(
-            obstime=utc,
-            representation_type=coords.WGS84GeodeticRepresentation
+            obstime=utc, representation_type=coords.WGS84GeodeticRepresentation
         )
     )
 
@@ -309,46 +312,66 @@ def calc_column_density(
         y=loc_j2000[:, 1] * u.m,
         z=loc_j2000[:, 2] * u.m,
         representation_type='cartesian',
-        obstime=utc
+        obstime=utc,
     ).transform_to(
         coords.ITRS(
-            obstime=utc,
-            representation_type=coords.WGS84GeodeticRepresentation
+            obstime=utc, representation_type=coords.WGS84GeodeticRepresentation
         )
     )
 
     src_x, src_y, src_z = src.cartesian.xyz.value
     loc_x, loc_y, loc_z = loc.cartesian.xyz.value  # unit: m
 
-    # this is not the exact start and end point,
+    # The following code solves the intersection of the ray with the ellipsoid
+    # The ray can be described as:
+    # r = loc + t * src
+    # where t is the parameter of the ray
+    # The earth can be described as an ellipsoid:
+    # x^2 + y^2 + (z/f)^2 = R^2
+    # Note that this is not the exact start and end point,
     # but a good enough approximation, see e.g. Harmon et al. (2002),
     # thus `lower_alt` and `upper_alt` is assumed to be low and high enough
     z_factor = (1.0 - f) ** (-2.0)
-    a = src_x*src_x + src_y*src_y + z_factor*src_z*src_z
-    b = 2.0 * (loc_x*src_x + loc_y*src_y + z_factor*loc_z*src_z)
-    tmp = loc_x*loc_x + loc_y*loc_y + z_factor*loc_z*loc_z
-    c_lower = tmp - lower_alt*lower_alt
-    c_upper = tmp - upper_alt*upper_alt
-    b2 = b*b
+    a = src_x * src_x + src_y * src_y + z_factor * src_z * src_z
+    b = 2.0 * (loc_x * src_x + loc_y * src_y + z_factor * loc_z * src_z)
+    tmp = loc_x * loc_x + loc_y * loc_y + z_factor * loc_z * loc_z
+    c_lower = tmp - lower_alt * lower_alt
+    c_upper = tmp - upper_alt * upper_alt
+    b2 = b * b
     a4 = 4.0 * a
-    d_lower = b2 - a4*c_lower
-    d_upper = b2 - a4*c_upper
+    d_lower = b2 - a4 * c_lower
+    d_upper = b2 - a4 * c_upper
 
     a2 = 2.0 * a
     neg_b = -b
-    sqrt_d_lower = np.sqrt(d_lower)
-    l2 = (neg_b + sqrt_d_lower) / a2
 
-    # no intersection with the lowest layer
-    lmask1 = d_lower < 0
-    # intersection with the lowest layer, but the path is above
-    lmask2 = (d_lower >= 0.0) & (l2 <= 0.0)
-    lmask = lmask1 | lmask2
+    # There are two cases to ignore when calculating the density along the ray:
+    # 1. ray goes through the lowest layer, which means the ray is blocked by
+    #    the layer.
+    # 2. ray does not intersect with the highest layer, which means the ray is
+    #    not extincted by the lower layers.
 
-    u2 = (neg_b + np.sqrt(d_upper)) / a2
-    # path intersects the upper layer
-    umask = (d_upper > 0) & (u2 > 0.0)
+    # Select the rays that do not intersect with the non-transparent layer.
+    lmask = d_lower < 0
+    # Or the location is above the layer and the ray is going upward,
+    # i.e. the ray is going away from the earth.
+    # We check the the sign of the intersection parameter is all negative to
+    # determine if this is the case.
+    # If the location is within the layer, the two intersection parameters
+    # will be positive and negative respectively, and hence not all negative.
+    mask = ~lmask
+    # check the sign of the largest intersection parameter, -b + sqrt(d) / (2a)
+    lmask[mask] = (neg_b[mask] + np.sqrt(d_lower[mask])) / a2[mask] <= 0.0
 
+    # Select the rays that intersect with the transparent layer.
+    umask = d_upper > 0
+    # Check the intersection parameter is positive.
+    # This is to exclude the case where the location is above the layer and
+    # the ray is going upward, hence the intersection is behind the ray.
+    mask = ~umask
+    umask[mask] = (neg_b[mask] + np.sqrt(d_upper[mask])) / a2[mask] > 0.0
+
+    # Combine the two masks
     mask = lmask & umask
 
     neg_b = -b[mask]
@@ -359,7 +382,7 @@ def calc_column_density(
     path_end = (neg_b + sqrt_d) / a2
     length = [
         np.arange(start, end + step_size, step_size)
-        for start, end in zip(path_start, path_end)
+        for start, end in zip(path_start, path_end, strict=True)
     ]
 
     utc_ = utc[mask]
@@ -369,7 +392,7 @@ def calc_column_density(
         coords.ITRS(
             loc_[i].cartesian + src_[i].cartesian * length[i] * u.m,
             obstime=utc_[i],
-            representation_type=coords.WGS84GeodeticRepresentation
+            representation_type=coords.WGS84GeodeticRepresentation,
         ).earth_location
         for i in range(np.sum(mask))
     ]
@@ -394,7 +417,7 @@ def calc_column_density(
                         f107a_masked[i],
                         ap_masked[i],
                     ),
-                    kwds=kwargs
+                    kwds=kwargs,
                 )
                 for i in range(np.sum(mask))
             ]
@@ -412,13 +435,18 @@ def calc_column_density(
     else:
         results = [
             calc_element_density(
-                utc_masked[i].value, path[i].lon.value, path[i].lat.value,
-                path[i].height.to(u.km).value, f107_masked[i], f107a_masked[i],
-                ap_masked[i], **kwargs
+                utc_masked[i].value,
+                path[i].lon.value,
+                path[i].lat.value,
+                path[i].height.to(u.km).value,
+                f107_masked[i],
+                f107a_masked[i],
+                ap_masked[i],
+                **kwargs,
             )
             for i in tqdm(
                 range(np.sum(mask)),
-                desc=f'Running on 1 CPU',
+                desc='Running on 1 CPU',
                 file=sys.stdout,
                 disable=not progress,
             )
@@ -426,33 +454,44 @@ def calc_column_density(
 
     if profile:
         # shape = (t, locs, elements)
-        density = _to_density_array(results)
+        if len(results) > 0:
+            density = _to_density_array(results)
+        else:
+            density = np.zeros((0, 1, 5), dtype=np.float32)
 
         # column profile of H, He, N, O and Ar, in shape (t, locs, 5)
         col_atoms = np.zeros((utc.size, density.shape[1], 5), dtype=np.float32)
         col_atoms[~lmask] = np.inf
 
         # atom/m^3 -> atom/m^2 -> atom/cm^2
-        col_atoms[mask] = density * step_size / 10000.0
+        col_atoms[mask] = density * step_size * 1e-4
 
         path_loc = np.empty((utc.size, density.shape[1], 3), dtype=np.float32)
-        path_loc[~lmask] = [
-            -181., -91., (lower_alt - R_earth.value) / 1000.0
-        ]
-        path_loc[~umask] = [
-            -181., -91., (upper_alt - R_earth.value) / 1000.0
-        ]
-        path_loc[mask] = _to_loc_array(
-            list(
-                np.column_stack(
-                    (i.lon.value, i.lat.value, i.height.value / 1000.0)
-                ) for i in path
-            )
+        path_loc[~lmask] = (
+            -181.0,
+            -91.0,
+            (lower_alt - R_earth.value) * 1e-3,
         )
-
+        path_loc[~umask] = [
+            -181.0,
+            -91.0,
+            (upper_alt - R_earth.value) * 1e-3,
+        ]
+        if mask.any():
+            path_loc[mask] = _to_loc_array(
+                [
+                    np.column_stack(
+                        (i.lon.value, i.lat.value, i.height.value * 1e-3)
+                    )
+                    for i in path
+                ]
+            )
     else:
         # shape = (t, elements)
-        density = np.vstack([r.sum(0) for r in results])
+        if len(results) > 0:
+            density = np.vstack([r.sum(0) for r in results])
+        else:
+            density = np.empty((0, 5), dtype=np.float32)
 
         # column density of H, He, N, O and Ar, in shape (t, 5)
         col_atoms = np.zeros((utc.size, 5), dtype=np.float32)
