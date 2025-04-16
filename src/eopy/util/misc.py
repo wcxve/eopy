@@ -50,10 +50,10 @@ def get_sat_j2000(time, file):
         orbit = hdu_list[orbit_ext].data
 
     time = np.array(time, order='C')
-    if time.dtype == float or time.dtype == int:
-        met = np.array(time, dtype=np.float64, order='C')
-    else:
+    if np.issubdtype(time.dtype, str):
         met = utc_to_met(time, sat)
+    else:
+        met = np.array(time, dtype=np.float64, order='C')
 
     # filter out some orbit info will not be used
     time_mask = (met.min() - 1 <= orbit[t]) & (orbit[t] <= met.max() + 1)
