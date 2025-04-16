@@ -7,7 +7,7 @@ name = "eopy"
 dynamic = ["version"]
 description = 'Package for Earth occultation data analysis.'
 readme = "README.md"
-requires-python = ">=3.10,<=3.12"
+requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 authors = [
@@ -17,7 +17,6 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
 #  "arviz",
@@ -86,65 +85,29 @@ all = [
   "typing",
 ]
 
-[tool.black]
-target-version = ["py310"]
-line-length = 79
-skip-string-normalization = true
-
 [tool.ruff]
-target-version = "py310"
 line-length = 79
-select = [
-  "A",
-  "ARG",
-  "B",
-  "C",
-  "DTZ",
-  "E",
-  "EM",
-  "F",
-  "FBT",
-  "I",
-  "ICN",
-  "ISC",
-  "N",
-  "PLC",
-  "PLE",
-  "PLR",
-  "PLW",
-  "Q",
-  "RUF",
-  "S",
-  "T",
-  "TID",
-  "UP",
-  "W",
-  "YTT",
+target-version = "py310"
+format.quote-style = "single"
+lint.extend-select = ["Q"]
+lint.flake8-quotes.inline-quotes = "single"
+lint.ignore = [
+    "B028",  # allow warnings without stacklevel
+    "C901",  # allow functions with a high complexity
+    "E731",  # allow lambda functions
 ]
-ignore = [
-  # Allow non-abstract empty methods in abstract base classes
-  "B027",
-  # Allow boolean positional values in function calls, like `dict.get(... True)`
-  "FBT003",
-  # Ignore checks for possible passwords
-  "S105", "S106", "S107",
-  # Ignore complexity
-  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+lint.ignore-init-module-imports = true
+lint.isort.known-first-party = ["eopy"]
+lint.isort.combine-as-imports = true
+lint.select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "UP",  # pyupgrade
 ]
-unfixable = [
-  # Don't touch unused imports
-  "F401",
-]
-
-[tool.ruff.isort]
-known-first-party = ["eopy"]
-
-[tool.ruff.flake8-tidy-imports]
-ban-relative-imports = "all"
-
-[tool.ruff.per-file-ignores]
-# Tests can use magic values, assertions, and relative imports
-"tests/**/*" = ["PLR2004", "S101", "TID252"]
 
 [tool.coverage.run]
 source_pkgs = ["eopy", "tests"]
