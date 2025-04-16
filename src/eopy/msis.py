@@ -189,7 +189,7 @@ def calc_column_density(
     Parameters
     ----------
     src_radec : array_like
-        R. A. and Dec. of source.
+        R. A. and Dec. of the source.
     loc_j2000 : array_like
         Array of J2000 coordinate (X, Y, Z), in unit m.
     utc : array_like
@@ -243,7 +243,7 @@ def calc_column_density(
         The column density of H, He, N, O and Ar atoms, in shape (n_time, 5) if
         ``profile=False`` else (n_time, n_grid, 5).
     path_loc : ndarray
-        Sampling location grids, returned only when ``profile=False``.
+        Sampling location grids, returned only when ``profile=True``.
 
     """
     if cores is None:
@@ -331,14 +331,28 @@ def calc_column_density(
     d_lower = b2 - a4*c_lower
     d_upper = b2 - a4*c_upper
 
-    lmask = d_lower < 0
-    umask = d_upper > 0
+    a2 = 2.0 * a
+    neg_b = -b
+    sqrt_d_lower = np.sqrt(d_lower)
+    l2 = (neg_b + sqrt_d_lower) / a2
+
+    # no intersection with the lowest layer
+    lmask1 = d_lower < 0
+    # intersection with the lowest layer, but the path is above
+    lmask2 = (d_lower >= 0.0) & (l2 <= 0.0)
+    lmask = lmask1 | lmask2
+
+    u2 = (neg_b + np.sqrt(d_upper)) / a2
+    # path intersects the upper layer
+    umask = (d_upper > 0) & (u2 > 0.0)
+
     mask = lmask & umask
 
     neg_b = -b[mask]
     sqrt_d = np.sqrt(d_upper[mask])
     a2 = 2.0 * a[mask]
     path_start = (neg_b - sqrt_d) / a2
+    path_start[path_start < 0.0] = 0.0
     path_end = (neg_b + sqrt_d) / a2
     length = [
         np.arange(start, end + step_size, step_size)
