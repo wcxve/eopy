@@ -7,7 +7,7 @@ name = "eopy"
 dynamic = ["version"]
 description = 'Package for Earth occultation data analysis.'
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<=3.12"
 license = "MIT"
 keywords = []
 authors = [
@@ -17,6 +17,7 @@ classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
 #  "arviz",
