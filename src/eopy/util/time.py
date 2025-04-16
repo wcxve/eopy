@@ -1,4 +1,3 @@
-import numpy as np
 from astropy.time import Time
 from astropy.units import s
 
@@ -55,26 +54,3 @@ def utc_to_met(utc, sat, UTCFINIT=None):
     utc0 = get_utc0(sat)
 
     return (Time(utc, scale='utc') - Time(utc0, scale='utc')).sec - UTCFINIT
-
-
-def get_YMDh(utc):
-    utc_str = np.datetime64(utc).astype(str)
-    YMD, hms = utc_str.split('T')
-    Y, M, D = YMD.split('-')
-    h, m, s = hms.split(':')
-    return (Y, M, D, h)
-
-
-def time_diff(ra, dec, utc, pos_file1, pos_file2):
-    return []
-
-
-def dm_delay(DM, freq, energy):
-    # DM: pc cm^-3
-    # freq: MHz
-    # energy: keV
-    k_DM = 4.149 # GHz^2 pc^-1 cm^3 ms
-    v_low = freq / 1000 # MHz to GHz
-    v_high = energy * 241799050.4024 # keV to GHz
-    delta_t = k_DM * DM * (v_low**(-2) - v_high**(-2)) # ms
-    return delta_t / 1000 # s
