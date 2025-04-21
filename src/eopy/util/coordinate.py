@@ -1,5 +1,5 @@
 import numpy as np
-from astropy.coordinates import get_body, SkyCoord
+from astropy.coordinates import SkyCoord, get_body
 from astropy.io import fits
 from scipy.spatial.transform import Rotation as R
 
@@ -19,7 +19,7 @@ def sph_to_cart(theta_phi, deg=True):
     sin_phi = np.sin(phi)
     cos_phi = np.cos(phi)
 
-    return np.transpose([sin_theta*cos_phi, sin_theta*sin_phi, cos_theta])
+    return np.transpose([sin_theta * cos_phi, sin_theta * sin_phi, cos_theta])
 
 
 def radec_to_cart(ra_dec, deg=True):
@@ -33,7 +33,7 @@ def radec_to_cart(ra_dec, deg=True):
     sin_ra = np.sin(ra)
     cos_ra = np.cos(ra)
 
-    return np.transpose([cos_dec*cos_ra, cos_dec*sin_ra, sin_dec])
+    return np.transpose([cos_dec * cos_ra, cos_dec * sin_ra, sin_dec])
 
 
 def cart_to_sph(xyz, deg=True):
@@ -43,10 +43,10 @@ def cart_to_sph(xyz, deg=True):
     theta = np.arctan2(norm_xy, z)
     phi = np.arctan2(y, x)
     if phi.shape == ():
-        phi += 0.0 if phi > 0.0 else 2.0*np.pi
+        phi += 0.0 if phi > 0.0 else 2.0 * np.pi
     else:
         neg = phi < 0.0
-        phi[neg] = phi[neg] + 2.0*np.pi
+        phi[neg] = phi[neg] + 2.0 * np.pi
 
     if deg:
         theta = np.degrees(theta)
@@ -61,10 +61,10 @@ def cart_to_radec(xyz, deg=True):
 
     ra = np.arctan2(y, x)
     if ra.shape == ():
-        ra += 0.0 if ra > 0.0 else 2.0*np.pi
+        ra += 0.0 if ra > 0.0 else 2.0 * np.pi
     else:
         neg = ra < 0.0
-        ra[neg] = ra[neg] + 2.0*np.pi
+        ra[neg] = ra[neg] + 2.0 * np.pi
     dec = np.arctan2(z, norm_xy)
 
     if deg:
@@ -137,47 +137,139 @@ def get_det_payload(sat, det=None):
     if SAT == 'FERMI':
         DET = 'GBM' if det is None else 'LAT'
         if DET == 'GBM':
-            det_theta = np.array([
-                20.58, 45.31, 90.21, 45.24,
-                90.27, 89.79, 20.43, 46.18,
-                89.97, 45.55, 90.42, 90.32,
-                90.00, 90.00
-            ])
-            det_phi = np.array([
-                 45.89,  45.11,  58.44, 314.87,
-                303.15,   3.35, 224.93, 224.62,
-                236.61, 135.19, 123.73, 183.74,
-                  0.00, 180.00
-            ])
+            det_theta = np.array(
+                [
+                    20.58,
+                    45.31,
+                    90.21,
+                    45.24,
+                    90.27,
+                    89.79,
+                    20.43,
+                    46.18,
+                    89.97,
+                    45.55,
+                    90.42,
+                    90.32,
+                    90.00,
+                    90.00,
+                ]
+            )
+            det_phi = np.array(
+                [
+                    45.89,
+                    45.11,
+                    58.44,
+                    314.87,
+                    303.15,
+                    3.35,
+                    224.93,
+                    224.62,
+                    236.61,
+                    135.19,
+                    123.73,
+                    183.74,
+                    0.00,
+                    180.00,
+                ]
+            )
         elif DET == 'LAT':
             det_theta = np.array([0.0])
             det_phi = np.array([0.0])
         else:
             ValueError(f'Fermi has no {DET}!')
     elif SAT in ['GECAM-A', 'GECAM-B']:
-        det_theta = np.array([
-             0.0, 40.0, 40.0, 40.0, 40.0,
-            40.0, 40.0, 73.5, 73.5, 73.5,
-            73.5, 73.5, 73.5, 73.5, 73.5,
-            73.5, 73.5, 90.0, 90.0, 90.0,
-            90.0, 90.0, 90.0, 90.0, 90.0
-        ])
-        det_phi = 90.0 + np.array([
-              0.00, 242.17, 188.67, 135.17,  62.17,
-              8.67, 315.17, 260.50, 224.50, 188.50,
-            152.50, 116.50,  80.50,  44.50,   8.50,
-            332.50, 296.50, 270.00, 215.00, 180.00,
-            125.00,  90.00,  35.00,   0.00, 305.00
-        ])
+        det_theta = np.array(
+            [
+                0.0,
+                40.0,
+                40.0,
+                40.0,
+                40.0,
+                40.0,
+                40.0,
+                73.5,
+                73.5,
+                73.5,
+                73.5,
+                73.5,
+                73.5,
+                73.5,
+                73.5,
+                73.5,
+                73.5,
+                90.0,
+                90.0,
+                90.0,
+                90.0,
+                90.0,
+                90.0,
+                90.0,
+                90.0,
+            ]
+        )
+        det_phi = 90.0 + np.array(
+            [
+                0.00,
+                242.17,
+                188.67,
+                135.17,
+                62.17,
+                8.67,
+                315.17,
+                260.50,
+                224.50,
+                188.50,
+                152.50,
+                116.50,
+                80.50,
+                44.50,
+                8.50,
+                332.50,
+                296.50,
+                270.00,
+                215.00,
+                180.00,
+                125.00,
+                90.00,
+                35.00,
+                0.00,
+                305.00,
+            ]
+        )
     elif SAT == 'GECAM-C':
-        det_theta = np.array([
-              0.0,  60.0,  60.0,  60.0,  60.0,  60.0,
-            180.0, 120.0, 120.0, 120.0, 120.0, 120.0
-        ])
-        det_phi = np.array([
-            0.0, 210.0, 150.0,  90.0,  30.0, 330.0,
-            0.0, 150.0, 210.0, 270.0, 330.0,  30.0
-        ])
+        det_theta = np.array(
+            [
+                0.0,
+                60.0,
+                60.0,
+                60.0,
+                60.0,
+                60.0,
+                180.0,
+                120.0,
+                120.0,
+                120.0,
+                120.0,
+                120.0,
+            ]
+        )
+        det_phi = np.array(
+            [
+                0.0,
+                210.0,
+                150.0,
+                90.0,
+                30.0,
+                330.0,
+                0.0,
+                150.0,
+                210.0,
+                270.0,
+                330.0,
+                30.0,
+            ]
+        )
     else:
         raise ValueError('`sat` must be "Fermi", "HXMT", or "GECAM-A/B/C"')
 
@@ -209,7 +301,7 @@ def haversine(lon1, lat1, lon2, lat2, deg=True):
     d_lon = 0.5 * (lon2 - lon1)
 
     a = np.sin(d_lat) ** 2 + (np.sin(d_lon) ** 2 * np.cos(lat1) * np.cos(lat2))
-    alpha = 2. * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
+    alpha = 2.0 * np.arctan2(np.sqrt(a), np.sqrt(1.0 - a))
 
     if deg:
         alpha = np.rad2deg(alpha)
@@ -270,7 +362,7 @@ def object_angle(obj, t0, tstart, tstop, posatt_file, det=None):
     # NOTE: wrong order before MET=59537900. This should not be applied to
     # NOTE: the correct posatt file of GECAM-C.
     if sat == 'GECAM-C':
-        mask = (met <= 59537900)
+        mask = met <= 59537900
         if any(mask):
             quat[mask] = np.column_stack([posatt[mask][q] for q in Q_pre])
             print('WARNING: applied workaround for reading GECAM-C quats!')
@@ -282,8 +374,16 @@ def object_angle(obj, t0, tstart, tstop, posatt_file, det=None):
             (-posatt['X_J2000'], -posatt['Y_J2000'], -posatt['Z_J2000'])
         )
     elif type(obj) == str and obj.lower() in (
-        'sun', 'moon', 'mercury', 'venus', 'earth-moon-barycenter', 'mars',
-        'jupiter', 'saturn', 'uranus', 'neptune'
+        'sun',
+        'moon',
+        'mercury',
+        'venus',
+        'earth-moon-barycenter',
+        'mars',
+        'jupiter',
+        'saturn',
+        'uranus',
+        'neptune',
     ):
         # in GCRS frame
         src = get_body(obj, met_to_utc(met, sat, True))
