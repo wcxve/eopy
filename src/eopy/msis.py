@@ -353,23 +353,30 @@ def calc_column_density(
 
     # Select the rays that do not intersect with the non-transparent layer.
     lmask = d_lower < 0
-    # Or the location is above the layer and the ray is going upward,
-    # i.e. the ray is going away from the earth.
-    # We check the the sign of the intersection parameter is all negative to
-    # determine if this is the case.
-    # If the location is within the layer, the two intersection parameters
+
+    # However, there are cases where the ray does intersect with the
+    # non-transparent layer, but the two intersections are all in the
+    # negative direction, i.e. the ray is going away from the non-transparent
+    # layer. These rays should also be *included*.  We check the sign of the
+    # intersections being all negative to determine if this is the case.
+    # Note that if the location is within the layer, the two intersections
     # will be positive and negative respectively, and hence not all negative.
     mask = ~lmask
-    # check the sign of the largest intersection parameter, -b + sqrt(d) / (2a)
+    # Only check the sign of the largest intersection, -b + sqrt(d) / (2a)
     lmask[mask] = (neg_b[mask] + np.sqrt(d_lower[mask])) / a2[mask] <= 0.0
 
     # Select the rays that intersect with the transparent layer.
     umask = d_upper > 0
-    # Check the intersection parameter is positive.
-    # This is to exclude the case where the location is above the layer and
-    # the ray is going upward, hence the intersection is behind the ray.
-    mask = ~umask
-    umask[mask] = (neg_b[mask] + np.sqrt(d_upper[mask])) / a2[mask] > 0.0
+
+    # However, there are cases where the ray does intersect with the
+    # transparent layer, but the two intersections are all in the
+    # negative direction, i.e. the ray is going away from the earth.
+    # These rays should be *excluded*.  We check the sign of the
+    # intersections being all negative to determine if this is the case.
+    # Note that if the location is within the layer, the two intersections
+    # will be positive and negative respectively, and hence not all negative.
+    # Only check the sign of the largest intersection, -b + sqrt(d) / (2a)
+    umask[umask] = (neg_b[umask] + np.sqrt(d_upper[umask])) / a2[umask] <= 0.0
 
     # Combine the two masks
     mask = lmask & umask
