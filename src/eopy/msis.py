@@ -362,7 +362,8 @@ def calc_column_density(
     # Note that if the location is within the layer, the two intersections
     # will be positive and negative respectively, and hence not all negative.
     mask = ~lmask
-    # Only check the sign of the largest intersection, -b + sqrt(d) / (2a)
+    # Only check the sign of the largest intersection, -b + sqrt(d) / (2a),
+    # if it is negative, then include this ray.
     lmask[mask] = (neg_b[mask] + np.sqrt(d_lower[mask])) / a2[mask] <= 0.0
 
     # Select the rays that intersect with the transparent layer.
@@ -373,10 +374,9 @@ def calc_column_density(
     # negative direction, i.e. the ray is going away from the earth.
     # These rays should be *excluded*.  We check the sign of the
     # intersections being all negative to determine if this is the case.
-    # Note that if the location is within the layer, the two intersections
-    # will be positive and negative respectively, and hence not all negative.
-    # Only check the sign of the largest intersection, -b + sqrt(d) / (2a)
-    umask[umask] = (neg_b[umask] + np.sqrt(d_upper[umask])) / a2[umask] <= 0.0
+    # Only check the sign of the largest intersection, -b + sqrt(d) / (2a),
+    # if it is positive, then exclude this ray.
+    umask[umask] = (neg_b[umask] + np.sqrt(d_upper[umask])) / a2[umask] >= 0.0
 
     # Combine the two masks
     mask = lmask & umask
