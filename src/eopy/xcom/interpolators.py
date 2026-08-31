@@ -1,6 +1,6 @@
 import csv
 import os
-from typing import Callable, List, Union, Optional
+from collections.abc import Callable
 
 import numpy as np
 import tables
@@ -11,23 +11,26 @@ from ._data_converter import NameProcess
 ROOT_PATH = os.path.dirname(__file__)
 DATA_PATH = os.path.join(ROOT_PATH, 'data')
 NIST_XCOM_HDF5_PATH = os.path.join(DATA_PATH, 'NIST_XCOM.hdf5')
-PERIODIC_TABLE_PATH = os.path.join(DATA_PATH, "PeriodicTableofElements.csv")
+PERIODIC_TABLE_PATH = os.path.join(DATA_PATH, 'PeriodicTableofElements.csv')
 
-_TRESHOLD_PAIR_ELECTRON = 2.044014E+06  # eV
-_TRESHOLD_PAIR_ATOM = 1.022007E+06  # eV
+_TRESHOLD_PAIR_ELECTRON = 2.044014e06  # eV
+_TRESHOLD_PAIR_ATOM = 1.022007e06  # eV
 
 
 class MaterialFactory:
     """
     Class for creation compound by mass fraction
     """
+
     element_symbols = None
 
     def __init__(self):
         self.elements = []
         self.weights = []
 
-    def add_element(self, element: Union[str, int], weight: float) -> 'MaterialFactory':
+    def add_element(
+        self, element: str | int, weight: float
+    ) -> 'MaterialFactory':
         """
         Add element and its mass fraction
 
@@ -50,14 +53,18 @@ class MaterialFactory:
         self.weights += material.weights
         return self
 
-    def build(self) -> "Material":
+    def build(self) -> 'Material':
         """
         Build material from partition
         """
         elements = list(
             map(
-                lambda x: self.get_element_from_symbol(x) if isinstance(x, str) else x,
-                self.elements
+                lambda x: (
+                    self.get_element_from_symbol(x)
+                    if isinstance(x, str)
+                    else x
+                ),
+                self.elements,
             )
         )
         return Material(elements, weights=self.weights)
@@ -136,7 +143,7 @@ class MaterialFactory:
     def _prepare_element_symbol(cls):
         cls.element_symbols = {}
         with open(PERIODIC_TABLE_PATH, newline='') as csvfile:
-            reader = csv.reader(csvfile, delimiter=",")
+            reader = csv.reader(csvfile, delimiter=',')
             next(reader)
             for row in reader:
                 Z, _, symbol = row[:3]
@@ -157,14 +164,14 @@ class MaterialFactory:
         Get element atomic mass in amu
         """
         if element <= 0 or element > 100:
-            raise Exception("Element must be from 1 ot 100")
+            raise Exception('Element must be from 1 ot 100')
         with tables.open_file(NIST_XCOM_HDF5_PATH) as h5file:
-            group_name = "/Z{}".format(str(element).rjust(3, '0'))
-            table = h5file.get_node(group_name, "data")
+            group_name = '/Z{}'.format(str(element).rjust(3, '0'))
+            table = h5file.get_node(group_name, 'data')
             return table.attrs['AtomicWeight']
 
     @staticmethod
-    def get_elements_mass_list(elements: List[int]) -> np.ndarray:
+    def get_elements_mass_list(elements: list[int]) -> np.ndarray:
         """
         Get list of elements atomic mass in amu
         """
@@ -172,9 +179,9 @@ class MaterialFactory:
         with tables.open_file(NIST_XCOM_HDF5_PATH) as h5file:
             for indx, element in enumerate(elements):
                 if element <= 0 or element > 100:
-                    raise Exception("Element must be from 1 ot 100")
-                group_name = "/Z{}".format(str(element).rjust(3, '0'))
-                table = h5file.get_node(group_name, "data")
+                    raise Exception('Element must be from 1 ot 100')
+                group_name = '/Z{}'.format(str(element).rjust(3, '0'))
+                table = h5file.get_node(group_name, 'data')
                 result[indx] = table.attrs['AtomicWeight']
             return result
 
@@ -184,7 +191,9 @@ class Material:
     Define material for attenuation calculation
     """
 
-    def __init__(self, elements: List[int], weights: Optional[List[float]] = None):
+    def __init__(
+        self, elements: list[int], weights: list[float] | None = None
+    ):
         """
         Parameters
         ----------
@@ -196,7 +205,7 @@ class Material:
         """
         self.elements_by_Z = elements
         if weights is not None:
-            assert (len(self.elements_by_Z) == len(weights))
+            assert len(self.elements_by_Z) == len(weights)
             sum_ = sum(weights)
             weights = list(map(lambda x: x / sum_, weights))
         self.weights = weights
@@ -205,7 +214,9 @@ class Material:
         return len(self.elements_by_Z)
 
 
-def make_log_log_spline(x: np.ndarray, y: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
+def make_log_log_spline(
+    x: np.ndarray, y: np.ndarray
+) -> Callable[[np.ndarray], np.ndarray]:
     """
     Create spline of
     """
@@ -218,7 +229,7 @@ def make_log_log_spline(x: np.ndarray, y: np.ndarray) -> Callable[[np.ndarray], 
 def _interpolateAbsorptionEdge(data) -> Callable[[np.ndarray], np.ndarray]:
     data, h5file, group = data
 
-    data_K = h5file.get_node(group, "K").read()
+    data_K = h5file.get_node(group, 'K').read()
     cubicSplineTreshold = np.max(data_K[NameProcess.ENERGY]) * 1e6
     x = np.log(data[NameProcess.ENERGY])
     y = np.log(data[NameProcess.PHOTOELECTRIC])
@@ -241,7 +252,9 @@ def _interpolateAbsorptionEdge(data) -> Callable[[np.ndarray], np.ndarray]:
     return spliner
 
 
-def make_pair_interpolator(x: np.ndarray, y: np.ndarray, treshold: float) -> Callable[[np.ndarray], np.ndarray]:
+def make_pair_interpolator(
+    x: np.ndarray, y: np.ndarray, treshold: float
+) -> Callable[[np.ndarray], np.ndarray]:
     x = (1 - (x / treshold)) ** 3
     indx = y > 0
     x = x[indx][::-1]
@@ -258,34 +271,51 @@ def make_pair_interpolator(x: np.ndarray, y: np.ndarray, treshold: float) -> Cal
     return spliner
 
 
-def create_coherent_interpolator(data: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
-    return make_log_log_spline(data[NameProcess.ENERGY],
-                               data[NameProcess.COHERENT])
+def create_coherent_interpolator(
+    data: np.ndarray,
+) -> Callable[[np.ndarray], np.ndarray]:
+    return make_log_log_spline(
+        data[NameProcess.ENERGY], data[NameProcess.COHERENT]
+    )
 
 
-def create_incoherent_interpolator(data: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
-    return make_log_log_spline(data[NameProcess.ENERGY],
-                               data[NameProcess.INCOHERENT])
+def create_incoherent_interpolator(
+    data: np.ndarray,
+) -> Callable[[np.ndarray], np.ndarray]:
+    return make_log_log_spline(
+        data[NameProcess.ENERGY], data[NameProcess.INCOHERENT]
+    )
 
 
-def create_pair_atom_interpolator(data: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
-    return make_pair_interpolator(data[NameProcess.ENERGY],
-                                  data[NameProcess.PAIR_ATOM],
-                                  treshold=_TRESHOLD_PAIR_ATOM)
+def create_pair_atom_interpolator(
+    data: np.ndarray,
+) -> Callable[[np.ndarray], np.ndarray]:
+    return make_pair_interpolator(
+        data[NameProcess.ENERGY],
+        data[NameProcess.PAIR_ATOM],
+        treshold=_TRESHOLD_PAIR_ATOM,
+    )
 
 
-def create_pair_electron_interpolator(data: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
-    return make_pair_interpolator(data[NameProcess.ENERGY],
-                                  data[NameProcess.PAIR_ELECTRON],
-                                  treshold=_TRESHOLD_PAIR_ELECTRON)
+def create_pair_electron_interpolator(
+    data: np.ndarray,
+) -> Callable[[np.ndarray], np.ndarray]:
+    return make_pair_interpolator(
+        data[NameProcess.ENERGY],
+        data[NameProcess.PAIR_ELECTRON],
+        treshold=_TRESHOLD_PAIR_ELECTRON,
+    )
 
 
-def create_photoelectric_interpolator(data: np.ndarray, absorption_edge=False) -> Callable[[np.ndarray], np.ndarray]:
+def create_photoelectric_interpolator(
+    data: np.ndarray, absorption_edge=False
+) -> Callable[[np.ndarray], np.ndarray]:
     if absorption_edge:
         return _interpolateAbsorptionEdge(data)
     else:
-        return make_log_log_spline(data[NameProcess.ENERGY],
-                                   data[NameProcess.PHOTOELECTRIC])
+        return make_log_log_spline(
+            data[NameProcess.ENERGY], data[NameProcess.PHOTOELECTRIC]
+        )
 
 
 class Interpolators:
@@ -298,25 +328,28 @@ class Interpolators:
 
     def get_interpolators(self, element: int):
         if element <= 0 or element > 100:
-            raise Exception("Element must be from 1 ot 100")
+            raise Exception('Element must be from 1 ot 100')
         try:
             return self.cache[element]
         except KeyError:
-            group_name = "/Z{}".format(str(element).rjust(3, '0'))
-            table = self.h5file.get_node(group_name, "data")
+            group_name = '/Z{}'.format(str(element).rjust(3, '0'))
+            table = self.h5file.get_node(group_name, 'data')
             data = table.read()
             if table.attrs['AbsorptionEdge']:
-                group_name += "/AbsorptionEdge"
+                group_name += '/AbsorptionEdge'
                 data_phot = (data, self.h5file, group_name)
             else:
                 data_phot = data
             temp = {
                 NameProcess.COHERENT: create_coherent_interpolator(data),
                 NameProcess.INCOHERENT: create_incoherent_interpolator(data),
-                NameProcess.PAIR_ELECTRON: create_pair_electron_interpolator(data),
+                NameProcess.PAIR_ELECTRON: create_pair_electron_interpolator(
+                    data
+                ),
                 NameProcess.PAIR_ATOM: create_pair_atom_interpolator(data),
-                NameProcess.PHOTOELECTRIC: create_photoelectric_interpolator(data_phot, absorption_edge=table.attrs[
-                    'AbsorptionEdge'])
+                NameProcess.PHOTOELECTRIC: create_photoelectric_interpolator(
+                    data_phot, absorption_edge=table.attrs['AbsorptionEdge']
+                ),
             }
             self.cache[element] = temp
             return temp
