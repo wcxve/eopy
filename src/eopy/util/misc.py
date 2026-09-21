@@ -7,18 +7,27 @@ __all__ = ['get_sat_j2000', 'telescope_to_sat']
 
 
 _ORBIT_CONFIG = {
-    'HXMT': ('Orbit',
-             'TIME',
-             'X', 'Y', 'Z',
-             'VX', 'VY', 'VZ'),
-    'GECAM': ('Orbit_Attitude',
-              'TIME',
-              'X_J2000', 'Y_J2000', 'Z_J2000',
-              'VX_J2000', 'VY_J2000', 'VZ_J2000'),
-    'Fermi': ('GLAST POS HIST',
-              'SCLK_UTC',
-              'POS_X', 'POS_Y', 'POS_Z',
-              'VEL_X', 'VEL_Y', 'VEL_Z'),
+    'HXMT': ('Orbit', 'TIME', 'X', 'Y', 'Z', 'VX', 'VY', 'VZ'),
+    'GECAM': (
+        'Orbit_Attitude',
+        'TIME',
+        'X_J2000',
+        'Y_J2000',
+        'Z_J2000',
+        'VX_J2000',
+        'VY_J2000',
+        'VZ_J2000',
+    ),
+    'Fermi': (
+        'GLAST POS HIST',
+        'SCLK_UTC',
+        'POS_X',
+        'POS_Y',
+        'POS_Z',
+        'VEL_X',
+        'VEL_Y',
+        'VEL_Z',
+    ),
 }
 _ORBIT_CONFIG['GECAM-A'] = _ORBIT_CONFIG['GECAM']
 _ORBIT_CONFIG['GECAM-B'] = _ORBIT_CONFIG['GECAM']
