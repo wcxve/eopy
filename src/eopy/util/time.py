@@ -34,7 +34,7 @@ def met_to_utc(met, sat, return_astropy_time=False, UTCFINIT=None):
         UTCFINIT = 0.0
 
     utc0 = get_utc0(sat)
-    utc = Time(utc0, format='isot', scale='utc') + (met + UTCFINIT)*s
+    utc = Time(utc0, format='isot', scale='utc') + (met + UTCFINIT) * s
     if return_astropy_time:
         return utc
     else:
