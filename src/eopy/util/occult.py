@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import astropy.units as u
 import numpy as np
-
 from astropy import coordinates as coords
 from astropy.constants.iau2015 import R_earth
 from astropy.io import fits
@@ -12,16 +11,14 @@ from numpy.typing import ArrayLike, NDArray
 from ..msis import calc_column_density
 from ..xcom import calculate_cross_section
 from .coordinate import radec_to_cart
+from .misc import _ORBIT_CONFIG, get_sat_j2000, telescope_to_sat
 from .time import met_to_utc
-from .misc import get_sat_j2000, telescope_to_sat, _ORBIT_CONFIG
 
 __all__ = ['calc_tangent_height', 'calc_transmis_coeff', 'get_oti']
 
 
 def calc_tangent_height(
-    src_radec: ArrayLike,
-    utc: ArrayLike,
-    file: str
+    src_radec: ArrayLike, utc: ArrayLike, file: str
 ) -> NDArray:
     """Calculate tangent height along the line of sight.
 
@@ -40,8 +37,8 @@ def calc_tangent_height(
         Tangent height in unit of km.
 
     """
-    f = 1/298.257
-    z_factor = (1 - f)**(-2)
+    f = 1 / 298.257
+    z_factor = (1 - f) ** (-2)
 
     utc = Time(np.atleast_1d(utc), scale='utc')
 
@@ -49,11 +46,10 @@ def calc_tangent_height(
     src = coords.GCRS(
         ra=src_radec[0].repeat(utc.size) * u.deg,
         dec=src_radec[1].repeat(utc.size) * u.deg,
-        obstime=utc
+        obstime=utc,
     ).transform_to(
         coords.ITRS(
-            obstime=utc,
-            representation_type=coords.WGS84GeodeticRepresentation
+            obstime=utc, representation_type=coords.WGS84GeodeticRepresentation
         )
     )
 
@@ -63,11 +59,10 @@ def calc_tangent_height(
         y=loc_j2000[:, 1] * u.m,
         z=loc_j2000[:, 2] * u.m,
         representation_type='cartesian',
-        obstime=utc
+        obstime=utc,
     ).transform_to(
         coords.ITRS(
-            obstime=utc,
-            representation_type=coords.WGS84GeodeticRepresentation
+            obstime=utc, representation_type=coords.WGS84GeodeticRepresentation
         )
     )
 
@@ -75,25 +70,23 @@ def calc_tangent_height(
     loc_x, loc_y, loc_z = loc.x.value, loc.y.value, loc.z.value  # unit: m
     r = R_earth.value
     r2 = r * r
-    a = src_x*src_x + src_y*src_y + z_factor * src_z*src_z
-    b = 2*(loc_x*src_x + loc_y*src_y + z_factor*loc_z*src_z)
-    c = loc_x*loc_x + loc_y*loc_y + z_factor*loc_z*loc_z - r2
-    hmin = np.sqrt(c + r2 - b*b/4.0/a) - r
-    mask = (a*b > 0.0)
-    hmin[mask] = np.linalg.norm(
-        [loc_x[mask], loc_y[mask], loc_z[mask]/(1 - f)], axis=0
-    ) - r
+    a = src_x * src_x + src_y * src_y + z_factor * src_z * src_z
+    b = 2 * (loc_x * src_x + loc_y * src_y + z_factor * loc_z * src_z)
+    c = loc_x * loc_x + loc_y * loc_y + z_factor * loc_z * loc_z - r2
+    hmin = np.sqrt(c + r2 - b * b / 4.0 / a) - r
+    mask = a * b > 0.0
+    hmin[mask] = (
+        np.linalg.norm(
+            [loc_x[mask], loc_y[mask], loc_z[mask] / (1 - f)], axis=0
+        )
+        - r
+    )
 
     return hmin / 1000.0
 
 
 def calc_transmis_coeff(
-    src_radec,
-    utc,
-    energy,
-    orbit_file,
-    step_size=0.5,
-    name=None
+    src_radec, utc, energy, orbit_file, step_size=0.5, name=None
 ):
     src = np.array(src_radec, dtype=np.float64, order='C')
 
@@ -114,9 +107,7 @@ def calc_transmis_coeff(
     )
 
     # shape = (t, e)
-    coeff = np.exp(
-        -np.einsum('tE,eE->te', d, cs, optimize='optimal')
-    )
+    coeff = np.exp(-np.einsum('tE,eE->te', d, cs, optimize='optimal'))
 
     return coeff
 
@@ -150,8 +141,16 @@ def get_oti(obj, file, alt_range):
     if type(obj) in [list, tuple] and len(obj) == 2:
         src_j2000 = radec_to_cart(obj)
     elif type(obj) == str and obj.lower() in (
-            'sun', 'moon', 'mercury', 'venus', 'earth-moon-barycenter', 'mars',
-            'jupiter', 'saturn', 'uranus', 'neptune'
+        'sun',
+        'moon',
+        'mercury',
+        'venus',
+        'earth-moon-barycenter',
+        'mars',
+        'jupiter',
+        'saturn',
+        'uranus',
+        'neptune',
     ):
         src = coords.get_body(obj, met_to_utc(met, sat, True))  # in GCRS frame
         src_j2000 = src.cartesian.xyz.value.T
@@ -170,6 +169,6 @@ def get_oti(obj, file, alt_range):
 
     diff = met[1:] - met[:-1]
     idx = np.flatnonzero(diff >= 2.0)
-    idx = np.sort([0, *idx, *(idx+1), len(met) - 1]).reshape(-1, 2)
+    idx = np.sort([0, *idx, *(idx + 1), len(met) - 1]).reshape(-1, 2)
 
     return met[idx], h[idx]
